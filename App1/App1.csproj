@@ -86,6 +86,9 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="AppDelegate.cs" />
+    <Compile Include="ScrollingMode.cs" />
+    <Compile Include="SimpleScrollView.cs" />
+    <Compile Include="SimpleScrollViewDelegate.cs" />
     <Compile Include="SimpleTableSource.cs" />
     <Compile Include="SimpleTableView.cs" />
     <Compile Include="SimpleView.cs" />

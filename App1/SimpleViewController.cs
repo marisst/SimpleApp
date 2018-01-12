@@ -36,6 +36,7 @@ namespace App1
                 "Phuong",
                 "Malin"
             };
+            View.LayoutSubviews();
         }
     }
 }

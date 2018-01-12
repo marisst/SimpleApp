@@ -4,13 +4,14 @@ using UIKit;
 
 namespace App1
 {
-    public sealed class SimpleTableView : UITableView
+    public sealed class SimpleScrollView : UIScrollView
     {
-        public SimpleTableView()
+        public SimpleScrollView()
         {
             TranslatesAutoresizingMaskIntoConstraints = false;
-            BackgroundColor = UIColor.Brown;
-            ScrollEnabled = true;
+            BackgroundColor = UIColor.Gray;
+            ShowsVerticalScrollIndicator = false;
+            Bounces = false;
         }
 
         public Func<nfloat, nfloat> VerticalContentOffsetTranslator { private get; set; } = offset => offset;

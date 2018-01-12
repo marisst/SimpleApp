@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using CoreGraphics;
 using UIKit;
 
@@ -7,108 +8,101 @@ namespace App1
     public class SimpleView : UIView
     {
         private const int TopViewMaxHeigth = 150;
-        private UIPanGestureRecognizer m_panGestureRecognizer;
+        private SimpleScrollView m_scrollView;
         private SimpleTableView m_tableView;
-        private NSLayoutConstraint m_topViewHeigthConstraint;
+        private UIView m_topView;
         public SimpleTableSource TableSource { get; } = new SimpleTableSource();
-
-        private nfloat TopViewHeigth
-        {
-            set => m_topViewHeigthConstraint.Constant = value;
-            get => m_topViewHeigthConstraint.Constant;
-        }
 
         public void BuildView()
         {
             TranslatesAutoresizingMaskIntoConstraints = false;
             BackgroundColor = UIColor.DarkGray;
 
-            var topView = new UIView{ TranslatesAutoresizingMaskIntoConstraints = false, BackgroundColor = UIColor.Orange };
-            m_tableView = new SimpleTableView { Source = TableSource };
+            // CreateViewElements & SetStyle
+            m_scrollView = new SimpleScrollView
+            {
+                Delegate = new SimpleScrollViewDelegate(),
+                VerticalContentOffsetTranslator = ScrollViewVerticalContentOffsetTranslator
+            };
+            var containerView = new UIView { TranslatesAutoresizingMaskIntoConstraints = false, BackgroundColor = UIColor.DarkGray };
+            m_topView = new UIView { TranslatesAutoresizingMaskIntoConstraints = false, BackgroundColor = UIColor.Orange };
+            m_tableView = new SimpleTableView { Source = TableSource, VerticalContentOffsetTranslator = TableViewVerticalContentOffsetTranslator };
 
-            Add(topView);
-            Add(m_tableView);
+            // SetUpViewHierarchy
+            Add(m_scrollView);
+            m_scrollView.Add(containerView);
+            containerView.Add(m_topView);
+            containerView.Add(m_tableView);
 
-            topView.TopAnchor.ConstraintEqualTo(LayoutMarginsGuide.TopAnchor).Active = true;
-            topView.LeftAnchor.ConstraintEqualTo(LayoutMarginsGuide.LeftAnchor).Active = true;
-            topView.RightAnchor.ConstraintEqualTo(LayoutMarginsGuide.RightAnchor).Active = true;
-            m_topViewHeigthConstraint = topView.HeightAnchor.ConstraintEqualTo(TopViewMaxHeigth);
-            m_topViewHeigthConstraint.Active = true;
+            // SetConstraints
+            m_scrollView.TopAnchor.ConstraintEqualTo(LayoutMarginsGuide.TopAnchor).Active = true;
+            m_scrollView.LeftAnchor.ConstraintEqualTo(LayoutMarginsGuide.LeftAnchor).Active = true;
+            m_scrollView.RightAnchor.ConstraintEqualTo(LayoutMarginsGuide.RightAnchor).Active = true;
+            m_scrollView.BottomAnchor.ConstraintEqualTo(LayoutMarginsGuide.BottomAnchor).Active = true;
 
-            m_tableView.TopAnchor.ConstraintEqualTo(topView.LayoutMarginsGuide.BottomAnchor).Active = true;
-            m_tableView.LeftAnchor.ConstraintEqualTo(LayoutMarginsGuide.LeftAnchor).Active = true;
-            m_tableView.RightAnchor.ConstraintEqualTo(LayoutMarginsGuide.RightAnchor).Active = true;
-            m_tableView.BottomAnchor.ConstraintEqualTo(LayoutMarginsGuide.BottomAnchor).Active = true;
+            containerView.TopAnchor.ConstraintEqualTo(m_scrollView.TopAnchor).Active = true;
+            containerView.LeftAnchor.ConstraintEqualTo(m_scrollView.LeftAnchor).Active = true;
+            containerView.RightAnchor.ConstraintEqualTo(m_scrollView.RightAnchor).Active = true;
+            containerView.WidthAnchor.ConstraintEqualTo(m_scrollView.WidthAnchor).Active = true;
+            containerView.BottomAnchor.ConstraintEqualTo(m_scrollView.BottomAnchor).Active = true;
 
-            m_panGestureRecognizer = new UIPanGestureRecognizer();
-            m_panGestureRecognizer.AddTarget(HandleScrollPanning);
-            m_tableView.AddGestureRecognizer(m_panGestureRecognizer);
-            AddGestureRecognizer(m_panGestureRecognizer);
-            m_panGestureRecognizer.ShouldRecognizeSimultaneously = (recognizer, gestureRecognizer) => true;
+            m_topView.TopAnchor.ConstraintEqualTo(containerView.TopAnchor).Active = true;
+            m_topView.LeftAnchor.ConstraintEqualTo(containerView.LeftAnchor).Active = true;
+            m_topView.RightAnchor.ConstraintEqualTo(containerView.RightAnchor).Active = true;
+            m_topView.HeightAnchor.ConstraintEqualTo(TopViewMaxHeigth).Active = true;
+
+            m_tableView.TopAnchor.ConstraintEqualTo(m_topView.BottomAnchor).Active = true;
+            m_tableView.LeftAnchor.ConstraintEqualTo(containerView.LeftAnchor).Active = true;
+            m_tableView.RightAnchor.ConstraintEqualTo(containerView.RightAnchor).Active = true;
+            m_tableView.BottomAnchor.ConstraintEqualTo(containerView.BottomAnchor).Active = true;
+            m_tableView.HeightAnchor.ConstraintEqualTo(m_scrollView.HeightAnchor).Active = true;
+
+            // SetUpGetRecognizers
+            var gesture = new UIPanGestureRecognizer();
+            m_scrollView.AddGestureRecognizer(gesture);
+            m_tableView.AddGestureRecognizer(gesture);
+            gesture.ShouldRecognizeSimultaneously = (panGesture, scrollGesture) => true;
+
+            // Scroll setup
         }
 
-        private void HandleScrollPanning()
+        private nfloat ScrollViewVerticalContentOffsetTranslator(nfloat verticalOffsetInScrollView)
         {
-            if (m_panGestureRecognizer.State != UIGestureRecognizerState.Ended)
-            {
-                OnScrollPanned();
-            }
-
-            m_panGestureRecognizer.SetTranslation(CGPoint.Empty, m_tableView);
+            //Debug.WriteLine(
+              //  $"Shared offset: {Math.Round(m_scrollView.ContentOffset.Y + m_tableView.ContentOffset.Y)} -> {Math.Round(verticalOffsetInScrollView + m_tableView.ContentOffset.Y)}, ScrollView: {Math.Round(m_scrollView.ContentOffset.Y)} -> {Math.Round(verticalOffsetInScrollView)}");
+            return verticalOffsetInScrollView;
         }
 
-        private void OnScrollPanned()
+        private nfloat TableViewVerticalContentOffsetTranslator(nfloat verticalOffsetInTableView)
         {
-            var translationY = m_panGestureRecognizer.TranslationInView(m_tableView).Y;
-            var isOffsetHigherThanTop = m_tableView.ContentOffset.Y < 0;
+            var tableOffsetSource = m_tableView.ContentOffset.Y;
+            var tableOffsetTarget = verticalOffsetInTableView;
+            var tableOffsetDiff = tableOffsetTarget - tableOffsetSource;
 
-            var scrollingDownwards = translationY < 0;
-            var isTopViewHidden = TopViewHeigth <= 0;
-            var isTopViewPartlyVisible = !isTopViewHidden && TopViewHeigth < TopViewMaxHeigth;
-            var isTopViewFullyVisible = !isTopViewHidden && TopViewHeigth >= TopViewMaxHeigth;
+            var sharedOffsetSource = m_scrollView.ContentOffset.Y + m_tableView.ContentOffset.Y;
+            var sharedOffsetTarget = sharedOffsetSource + tableOffsetDiff;
 
-            var scrollingDirection = scrollingDownwards ? "downwards" : "upwards";
-            var topViewState = isTopViewHidden ? "hidden" : isTopViewPartlyVisible ? "partly visible" : "fully visible";
-            //System.Diagnostics.Debug.WriteLine($"translationY: {Math.Round(translationY)}, isScrollingHigherThanTop: {isScrollingHigherThanTop}, scrolling direction: {scrollingDirection}, top view state {topViewState}");
-            //System.Diagnostics.Debug.WriteLine(m_tableView.ContentOffset.Y);
-            if (isTopViewFullyVisible)
+            //Debug.WriteLine(
+              //  $"Shared offset: {Math.Round(sharedOffsetSource)} -> {Math.Round(sharedOffsetTarget)}, TableView: {Math.Round(m_tableView.ContentOffset.Y)} -> {Math.Round(verticalOffsetInTableView)}");
+
+            if (!TableSource.DraggingStartDetected)
             {
-                if (scrollingDownwards)
+                TableSource.DraggingStartDetected = true;
+                if (sharedOffsetTarget < 150)
                 {
-                    if (!isOffsetHigherThanTop)
-                    {
-                        TopViewHeigth += translationY;
-                    }
+                    TableSource.DraggingStartedInState1 = true;
                 }
-                else
-                {
-
-                }
-            } else if (isTopViewPartlyVisible)
-            {
-                TopViewHeigth += translationY;
-                if (scrollingDownwards && TopViewHeigth > 0)
-                {
-                    m_tableView.SetContentOffset(CGPoint.Empty, false);
-                }
-            } else if (isTopViewHidden)
-            {
-                if (scrollingDownwards)
-                {
-                }
-                else
-                {
-                    if (isOffsetHigherThanTop)
-                    {
-                        TopViewHeigth += translationY;
-                    }
-                    else
-                    {
-
-                    }
-                    
-                }
+                TableSource.DraggingStartedInState1 = false;
             }
+
+            if (sharedOffsetTarget < 150)
+            {
+                var diff = TableSource.DraggingStartedInState1 ? verticalOffsetInTableView - 150 : verticalOffsetInTableView;
+                m_scrollView.ContentOffset = new CGPoint(m_scrollView.ContentOffset.X, m_scrollView.ContentOffset.Y + diff);
+                return 0;
+            }
+            m_scrollView.ContentOffset = new CGPoint(m_scrollView.ContentOffset.X, 150);
+            return sharedOffsetTarget - 150;
         }
     }
 }
