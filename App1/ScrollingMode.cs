@@ -2,9 +2,6 @@
 {
     public enum ScrollingMode
     {
-        ScrollViewGestureScrollingScrollView,
-        ScrollViewGestureScrollingTableView,
-        TableViewGestureScrollingScrollView,
-        TableViewGestureScrollingTableView
+        AA, AB, BA, BB
     }
 }

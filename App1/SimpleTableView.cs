@@ -13,12 +13,12 @@ namespace App1
             ScrollEnabled = true;
         }
 
-        public Func<nfloat, nfloat> VerticalContentOffsetTranslator { private get; set; } = offset => offset;
+        public Action<Action<CGPoint>, CGPoint> VerticalContentOffsetTranslator { private get; set; } = (action, point) => action(point);
 
         public override CGPoint ContentOffset
         {
             get => base.ContentOffset;
-            set => base.ContentOffset = new CGPoint(value.X, VerticalContentOffsetTranslator(value.Y));
+            set => VerticalContentOffsetTranslator(point => base.ContentOffset = point, value);
         }
     }
 }
